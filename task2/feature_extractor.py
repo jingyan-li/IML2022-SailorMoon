@@ -54,8 +54,8 @@ def extract_features(path="./data/", split="train", save2csv=True):
 
 
 if __name__ == "__main__":
-    path="./data/"
-    split="train"
+    path = "./data/"
+    split = "test"
     extract_features(path, split, save2csv=True)
 
 

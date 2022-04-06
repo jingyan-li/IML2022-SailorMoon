@@ -1,13 +1,34 @@
 from feature_extractor import extract_features
+import subtask1
+
+import pickle
+import numpy as np
+
 
 if __name__ == "__main__":
     # Extract features
     path = "./data/"
     save_to_csv = True
-    feat_train = extract_features(path, "train", save2csv=save_to_csv)
     feat_test = extract_features(path, "test", save2csv=save_to_csv)
-    # Train
 
-
-
+    # Subtask1
+    # Use best estimator & params
+    X1, y1 = subtask1.get_features(path=path, split='test')
+    model1 = pickle.load(open('./log/subtask1_best.p', "rb"))
     # Predict
+    pred1 = model1.predict_proba(X1)
+    pred1 = np.array(pred1)[:, :, 1].transpose() # of shape [n_samples, n_classes]
+
+
+    # TODO Subtask 2
+    # TODO Subtask 3
+
+
+    # TODO Compact predictions from three subtasks and store it in dataframe
+
+
+    # TODO Save dataframe to sample.zip
+
+
+
+
