@@ -24,7 +24,7 @@ def hyper_tuning(model, params, X, y, log_path="./data/subtask1_cvresults.csv", 
     if saveEstimator:
         if not os.path.exists('./log'):
             os.makedirs('./log')
-        pickle.dump(final_model, open("./log/subtask1_best.p","wb"))
+        pickle.dump(final_model, open("./log/subtask1_best.p", "wb"))
     return final_model
 
 
@@ -35,20 +35,19 @@ def get_features(path="./data", split="train"):
     # Fill nan values
     X = np.nan_to_num(X)
     y = None
-    if split=="test":
+    if split == "train":
         labels = pd.read_csv(os.path.join(path, f'{split}_labels.csv')).sort_values("pid")
         y = labels[TESTS].values
     return X, y
 
 
-#%%
+# %%
 if __name__ == "__main__":
     # Get features
     X, y = get_features()
 
     # Set seed
     seed = 2022
-
 
     # Model selection
     # Random forest
@@ -60,5 +59,3 @@ if __name__ == "__main__":
     }
 
     estimator = hyper_tuning(rf, params, X, y, saveEstimator=True)
-
-

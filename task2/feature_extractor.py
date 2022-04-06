@@ -38,7 +38,13 @@ def extract_features(path="./data/", split="train", save2csv=True):
     Extract features and save as csv (if required)
     :return: features (pd.Dataframe)
     """
-    data = pd.read_csv(os.path.join(path, f"{split}_features.csv"))
+    feat_path = os.path.join(path, f"{split}_feature_extracted.csv")
+    data_path = os.path.join(path, f"{split}_features.csv")
+    if os.path.exists(feat_path):
+        print("features already extracted! reading...")
+        return pd.read_csv(feat_path)
+
+    data = pd.read_csv(data_path)
     # age
     ages = data[['pid', 'Age']].groupby('pid').min()
     # the other tests/signs
@@ -49,7 +55,7 @@ def extract_features(path="./data/", split="train", save2csv=True):
     feats_withage = feats.join(ages, on='pid')
     # Save to csv if needed
     if save2csv:
-        feats_withage.to_csv(os.path.join(path, f"{split}_feature_extracted.csv"))
+        feats_withage.to_csv(feat_path)
     return feats_withage
 
 
