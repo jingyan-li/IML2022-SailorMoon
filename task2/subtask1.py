@@ -30,12 +30,14 @@ def hyper_tuning(model, params, X, y, log_path="./data/subtask1_cvresults.csv", 
 
 def get_features(path="./data", split="train"):
     features = pd.read_csv(os.path.join(path, f'{split}_feature_extracted.csv')).sort_values("pid")
-    labels = pd.read_csv(os.path.join(path, f'{split}_labels.csv')).sort_values("pid")
-    y = labels[TESTS].values
     # Select features
     X = features.values
     # Fill nan values
     X = np.nan_to_num(X)
+    y = None
+    if split=="test":
+        labels = pd.read_csv(os.path.join(path, f'{split}_labels.csv')).sort_values("pid")
+        y = labels[TESTS].values
     return X, y
 
 

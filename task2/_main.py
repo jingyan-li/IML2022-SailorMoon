@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # Subtask1
     # Use best estimator & params
-    X1, y1 = subtask1.get_features(path=path, split='test')
+    X1, _ = subtask1.get_features(path=path, split='test')
     model1 = pickle.load(open('./log/subtask1_best.p', "rb"))
     # Predict
     pred1 = model1.predict_proba(X1)
