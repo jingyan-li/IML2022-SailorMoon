@@ -2,8 +2,8 @@ import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
-import csv
 
+import csv
 # Read data
 train_data = np.genfromtxt('./data/train.csv', skip_header=1, delimiter=",")
 
@@ -39,7 +39,6 @@ writer = csv.writer(f)
 for i in range(5):
     writer.writerow([score[i]])
 f.close()
-
 
 
 
