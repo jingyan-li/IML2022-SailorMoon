@@ -56,7 +56,7 @@ def extract_features(path="./data/", split="train", save2csv=True):
     # Save to csv if needed
     if save2csv:
         feats_withage.to_csv(feat_path)
-    return feats_withage
+    return feats_withage.sort_values("pid")
 
 
 if __name__ == "__main__":

@@ -24,15 +24,14 @@ def get_features(path="./data", split="train"):
 
 
 def train3(X, y, log_path="./data/subtask3_cvresults.csv", saveEstimator=True):
-    # regr = MultiOutputRegressor(Ridge(random_state=123)).fit(X, y)
     seed = 2022
     rf = RandomForestRegressor(random_state=seed)
     params = {
-        "n_estimators": [400, 500, 600],
-        "max_depth": [9, 12, 15],
-        "criterion": ["mse", "mae"]
+        "n_estimators": [100, 200],
+        "max_depth": [9],
+        # "criterion": ["mse", "mae"]
     }
-    clf = GridSearchCV(rf, param_grid=params, scoring='r2', n_jobs=-1, cv=10, verbose=3, refit=True)
+    clf = GridSearchCV(rf, param_grid=params, scoring='r2', n_jobs=4, cv=10, verbose=3, refit=True)
     clf.fit(X, y)
     # Get cv results
     cv_results = pd.DataFrame().from_dict(clf.cv_results_)
@@ -43,6 +42,10 @@ def train3(X, y, log_path="./data/subtask3_cvresults.csv", saveEstimator=True):
     print(pred.shape)
     score = r2_score(y, pred)
     print(f"Overall train $r^2$ score : {score}")
+
+    norm_score = np.mean(
+        [0.5 + 0.5 * np.maximum(0, r2_score(y[:,i], pred[:,i])) for i in range(y.shape[1])])
+    print(f"Score normalized $r^2$: {norm_score}")
 
     if saveEstimator:
         if not os.path.exists('./log'):
