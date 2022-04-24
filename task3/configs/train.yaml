@@ -1,0 +1,23 @@
+train_cfg:
+  random_seed: 2022
+  deterministic: True
+  resume_checkpoint: null
+  optimizer: Adam
+  lr: 0.0001
+  weight_decay: 0.001
+  scheduler:
+    milestones: [100, 200]
+  epochs: 2
+
+data_cfg:
+  root_path: "/cluster/scratch/jingyli/iml/data"
+  loader_cfg:
+    batch_size: 64
+    num_workers: 4
+    pin_memory: True
+
+model_cfg:
+  margin: 0.5
+
+log_cfg:
+  use_wandb_logger: False
