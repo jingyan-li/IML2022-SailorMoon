@@ -2,10 +2,8 @@ import numpy as np
 
 from Labels import VITALS
 import pandas as pd
-from sklearn.multioutput import MultiOutputRegressor
-from sklearn.linear_model import Ridge
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.metrics import r2_score
 import os
 import pickle
@@ -53,6 +51,29 @@ def train3(X, y, log_path="./data/subtask3_cvresults.csv", saveEstimator=True):
         pickle.dump(final_model, open("./log/subtask3_best.p", "wb"))
 
     return final_model
+
+def train(model, X, y):
+    # Manual cross validation
+    kf = KFold(n_splits=3, shuffle=True, random_state=1)
+    scores = []
+    i = 1
+    for train_index, test_index in kf.split(X):
+        print(f"Fold {i}: ", end='')
+        i += 1
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        model.fit(X_train, y_train)
+
+        y_pred = model.predict(X_test)
+        score = r2_score(y_test, y_pred)
+        print(f"score = {score}")
+        scores.append(score)
+    print(f"Average cv score: {np.mean(scores)}")
+
+    # Train
+    model.fit(X, y)
+    return model
 
 if __name__ == "__main__":
     print("Subtask 3")

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from Labels import TESTS
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, KFold
 import sklearn.metrics as metrics
 import os
 import pickle
@@ -26,6 +26,33 @@ def hyper_tuning(model, params, X, y, log_path="./data/subtask1_cvresults.csv", 
             os.makedirs('./log')
         pickle.dump(final_model, open("./log/subtask1_best.p", "wb"))
     return final_model
+
+
+def train(model, X, y):
+    # CV
+    kf = KFold(n_splits=3, shuffle=True, random_state=1)
+    scores = []
+    i = 1
+    for train_index, test_index in kf.split(X):
+        print(f"Fold {i}: ", end='')
+        i += 1
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        model.fit(X_train, y_train)
+
+        y_pred = model.predict_proba(X_test)
+
+        y_pred = np.transpose([pred[:, 1] for pred in y_pred])
+
+        score = metrics.roc_auc_score(y_test, y_pred, average='macro')
+        print(f"score = {score}")
+        scores.append(score)
+    print(f"Average cv score: {np.mean(scores)}")
+
+    # Train
+    model.fit(X, y)
+    return model
 
 
 def get_features(path="./data", split="train"):

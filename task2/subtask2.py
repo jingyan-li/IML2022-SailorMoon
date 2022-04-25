@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, KFold
 import sklearn.metrics as metrics
 import os
 from Labels import SEPSIS
@@ -44,6 +44,31 @@ def train2(X, y, log_path="./data/subtask2_cvresults.csv", saveEstimator=True):
             os.makedirs('./log')
         pickle.dump(final_model, open("./log/subtask2_best.p", "wb"))
     return final_model
+
+def train(model, X, y):
+    # Manual cross validation
+    kf = KFold(n_splits=3, shuffle=True, random_state=1)
+    scores = []
+    i = 1
+    for train_index, test_index in kf.split(X):
+        print(f"Fold {i}: ", end='')
+        i += 1
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        model.fit(X_train, y_train)
+
+        y_pred = model.predict_proba(X_test)
+        y_pred = y_pred[:, 1]
+        score = metrics.roc_auc_score(y_test, y_pred, average='macro')
+        print(f"score = {score}")
+        scores.append(score)
+    print(f"Average cv score: {np.mean(scores)}")
+
+    # Train
+    model.fit(X, y)
+
+    return model
 
 if __name__ == "__main__":
     print("Subtask 2")
