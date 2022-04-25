@@ -7,13 +7,19 @@ from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.metrics import r2_score
 import os
 import pickle
+from sklearn.impute import KNNImputer
+from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
+from sklearn.model_selection import KFold
 
 def get_features(path="./data", split="train"):
     features = pd.read_csv(os.path.join(path, f'{split}_feature_extracted.csv')).sort_values("pid")
+    n_neighbor = 10
+    knn_imputer = KNNImputer(n_neighbors=n_neighbor, copy=True)
+    X = knn_imputer.fit_transform(features.values)
     # Select features
-    X = features.values
+    #X = features.values
     # Fill nan values
-    X = np.nan_to_num(X)
+    #X = np.nan_to_num(X)
     y = None
     if split == "train":
         labels = pd.read_csv(os.path.join(path, f'{split}_labels.csv')).sort_values("pid")
@@ -22,21 +28,49 @@ def get_features(path="./data", split="train"):
 
 
 def train3(X, y, log_path="./data/subtask3_cvresults.csv", saveEstimator=True):
-    seed = 2022
-    rf = RandomForestRegressor(random_state=seed)
-    params = {
-        "n_estimators": [100, 200],
-        "max_depth": [9],
-        # "criterion": ["mse", "mae"]
-    }
-    clf = GridSearchCV(rf, param_grid=params, scoring='r2', n_jobs=4, cv=10, verbose=3, refit=True)
-    clf.fit(X, y)
+    #seed = 2022
+    #rf = RandomForestRegressor(random_state=seed)
+    #params = {
+    #    "n_estimators": [100, 200,300],
+    #    "max_depth": [9,12],
+    #    # "criterion": ["mse", "mae"]
+    #}
+    #clf = GridSearchCV(rf, param_grid=params, scoring='r2', n_jobs=4, cv=10, verbose=3, refit=True)
+    #clf.fit(X, y)
+
+    n_estimators = 200
+    n_jobs = -1
+    clf= MultiOutputRegressor(RandomForestRegressor(n_estimators=n_estimators, verbose=0, n_jobs=n_jobs))
+
+    # Manual cross validation
+    kf = KFold(n_splits=3, shuffle=True, random_state=1)
+    scores = []
+    i = 1
+    for train_index, test_index in kf.split(X):
+        print(f"Fold {i}: ", end='')
+        i += 1
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        clf.fit(X_train, y_train)
+
+        y_pred = clf.predict(X_test)
+        score = r2_score(y_test, y_pred)
+        print(f"score = {score}")
+        scores.append(score)
+    print(f"Average cv score: {np.mean(scores)}")
+
+    clf.fit(X,y)
+
     # Get cv results
-    cv_results = pd.DataFrame().from_dict(clf.cv_results_)
-    cv_results.to_csv(log_path)
+    #cv_results = pd.DataFrame().from_dict(clf.cv_results_)
+    #cv_results.to_csv(log_path)
     # Make prediction by best_estimator on whole train data
-    final_model = clf.best_estimator_
-    pred = final_model.predict(X)
+    #final_model = clf.best_estimator_
+    cv_results = pd.DataFrame().from_dict(clf.predict(X))
+    cv_results.to_csv(log_path)
+
+    pred = clf.predict(X)
     print(pred.shape)
     score = r2_score(y, pred)
     print(f"Overall train $r^2$ score : {score}")
@@ -48,9 +82,9 @@ def train3(X, y, log_path="./data/subtask3_cvresults.csv", saveEstimator=True):
     if saveEstimator:
         if not os.path.exists('./log'):
             os.makedirs('./log')
-        pickle.dump(final_model, open("./log/subtask3_best.p", "wb"))
+        pickle.dump(clf, open("./log/subtask3_best.p", "wb"))
 
-    return final_model
+    return clf
 
 def train(model, X, y):
     # Manual cross validation
