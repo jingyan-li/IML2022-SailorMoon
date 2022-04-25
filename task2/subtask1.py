@@ -6,6 +6,7 @@ from sklearn.model_selection import GridSearchCV
 import sklearn.metrics as metrics
 import os
 import pickle
+from sklearn.impute import KNNImputer
 
 
 def hyper_tuning(model, params, X, y, log_path="./data/subtask1_cvresults.csv", saveEstimator=True):
@@ -31,9 +32,9 @@ def hyper_tuning(model, params, X, y, log_path="./data/subtask1_cvresults.csv", 
 def get_features(path="./data", split="train"):
     features = pd.read_csv(os.path.join(path, f'{split}_feature_extracted.csv')).sort_values("pid")
     # Select features
-    X = features.values
-    # Fill nan values
-    X = np.nan_to_num(X)
+    n_neighbor = 10
+    knn_imputer = KNNImputer(n_neighbors=n_neighbor, copy=True)
+    X = knn_imputer.fit_transform(features.values)
     y = None
     if split == "train":
         labels = pd.read_csv(os.path.join(path, f'{split}_labels.csv')).sort_values("pid")
@@ -54,8 +55,8 @@ if __name__ == "__main__":
     rf = RandomForestClassifier(random_state=seed, class_weight="balanced_subsample")
     # CV for Parameter tuning
     params = {
-        "n_estimators": [400, 500, 600],
-        "max_depth": [9, 12, 15],
+        "n_estimators": [500],
+        "max_depth": [15],
     }
 
     estimator = hyper_tuning(rf, params, X, y, saveEstimator=True)
