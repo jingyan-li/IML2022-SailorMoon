@@ -7,6 +7,7 @@ import subtask2
 import pickle
 import numpy as np
 import Labels
+import score_submission
 
 if __name__ == "__main__":
     # ########## Preprocess ############
@@ -25,8 +26,10 @@ if __name__ == "__main__":
     # Use best estimator & params
     model1 = pickle.load(open('./log/subtask1_best.p', "rb"))
     # Predict
-    pred1 = model1.predict_proba(X1)
+    #pred1 = model1.predict_proba(X1)
+    pred1 = model1.predict(X1)
     pred1 = np.array(pred1)[:, :, 1].transpose() # of shape [n_samples, n_classes]
+    #print(pred1)
     print("subtask1 done!")
     del X1
 
@@ -36,7 +39,8 @@ if __name__ == "__main__":
     X2, _ = subtask2.get_features(path=path, split='test')
     model2 = pickle.load(open('./log/subtask2_best.p', "rb"))
     # Predict
-    pred2 = model2.predict_proba(X2)[:, 1:] # of shape [n_samples, n_classes]
+    #pred2 = model2.predict_proba(X2)[:, 1:] # of shape [n_samples, n_classes]
+    pred2 = model2.predict(X2)[:, 1:]
     print("subtask2 done!")
     del X2
 
@@ -52,11 +56,19 @@ if __name__ == "__main__":
     print(f"Saving result to {path}/submit.csv...")
     # Compact predictions from three subtasks and store it in dataframe
     pred = np.hstack([pids_test[:, np.newaxis], pred1, pred2, pred3]).astype(np.float32)
+    print(pred)
     print(f"Prediction array shape : {pred.shape}")
     pred_df = pd.DataFrame(data=pred, columns=["pid"] + Labels.VITALS + Labels.TESTS + Labels.SEPSIS)
     pred_df.set_index("pid", drop=True, inplace=True)
+    filename = 'sample.zip'
+    df_submission = pd.read_csv(filename)
+
+    # generate a baseline based on sample.zip
+    df_true = pd.read_csv("./data/sample.csv")
+    print(score_submission.get_score(df_true,pred_df))
     # Save dataframe to sample.zip
-    pred_df.to_csv(path+"submit.csv.zip")
+    pred_df.to_csv('prediction.csv', index=True, float_format='%.3f')#, compression='zip')
+
 
 
 
