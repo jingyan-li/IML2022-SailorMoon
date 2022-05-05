@@ -19,9 +19,10 @@ class FoodData():
                  root_path: str = None,
                  train_val_split: bool = True,
                  load_sets: list = ['train', 'test'],
-                 image_resize: tuple = (120,120),
+                 image_resize: tuple = (240,240),
                  loader_cfg: dict = None
                  ):
+
         self.datasets = {'train': None, 'test': None}
         self.dataloaders = {'train': None, 'test': None}
         self.data_root = {'triplet_path': Path(root_path), 'image_path': Path(root_path)/"food"}

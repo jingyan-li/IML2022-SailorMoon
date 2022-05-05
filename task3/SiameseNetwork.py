@@ -9,24 +9,24 @@ import numpy as np
 
 
 class EmbeddingNet(nn.Module):
-    def __init__(self):
+    def __init__(self, img_size: tuple, out_channels: int):
         super(EmbeddingNet, self).__init__()
         # Input is [BatchSize, 3, 348, 512]
-
+        # 240
         # TODO: CNN structure
         self.convnet = nn.Sequential(nn.Conv2d(3, 8, 5, padding=2),
                                      nn.PReLU(), nn.BatchNorm2d(8),
-                                     nn.MaxPool2d(2, stride=2),     # [B, 8, 174, 256]
+                                     nn.MaxPool2d(2, stride=2),     # [B, 8, 174, 256] # 120
                                      # ==========================================================
                                      nn.Conv2d(8, 16, 5, padding=2),
                                      nn.PReLU(), nn.BatchNorm2d(16),
-                                     nn.MaxPool2d(2, stride=2))     # [B, 16, 87, 128]
+                                     nn.MaxPool2d(2, stride=2))     # [B, 16, 87, 128] # 60
 
-        self.fc = nn.Sequential(nn.Linear(16 * 87 * 128, 256),
+        self.fc = nn.Sequential(nn.Linear(16 * (img_size[0]//4) * (img_size[1]//4), 256),
                                 nn.PReLU(),
                                 nn.Linear(256, 256),
                                 nn.PReLU(),
-                                nn.Linear(256, 2)
+                                nn.Linear(256, out_channels)
                                 )
 
     def forward(self, x):
@@ -109,6 +109,6 @@ class TripletModel(nn.Module):
 
     def predict(self, anchor, positive, negative):
         loss = self.triplet_loss(anchor, positive, negative)
-        # pred_y = 1 if loss - self.margin < 0 else 0
-        pred_y = 1 if np.random.rand() < 0.5 else 0
+        pred_y = 1 if loss - self.margin < 0 else 0
+        # pred_y = 1 if np.random.rand() < 0.5 else 0
         return pred_y, loss
