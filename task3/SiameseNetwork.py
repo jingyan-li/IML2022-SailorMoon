@@ -91,31 +91,44 @@ class TripletModel(nn.Module):
         self.embedding_model = embedding_model
         self.margin = margin
         self.triplet_loss = nn.TripletMarginLoss(margin=self.margin, p=2)
+        self.triplet_loss_batch = nn.TripletMarginLoss(margin=self.margin, p=2, reduction='none')
 
     def forward(self, anchor, positive, negative):
-        anchor_emb = self.embedding_model(anchor)
-        positive_emb = self.embedding_model(positive)
-        negative_emb = self.embedding_model(negative)
+        anchor_emb = self.get_embedding(anchor)
+        positive_emb = self.get_embedding(positive)
+        negative_emb = self.get_embedding(negative)
         return anchor_emb, positive_emb, negative_emb
-        # loss = self.loss(anchor_emb, positive_emb, negative_emb)
-        #
-        # return loss
 
     def get_embedding(self, x):
+        # TODO: Embedding by pre-trained network
         return self.embedding_model(x)
 
-    def loss(self, anchor, positive, negative, size_average=True):
+    def loss(self, anchor, positive, negative):
+        """
+        Calculate loss with batch-wise mean reduction
+        :param anchor:
+        :param positive:
+        :param negative:
+        :return:
+        """
         loss = self.triplet_loss(anchor, positive, negative)
         return loss
 
     def predict(self, anchor, positive, negative):
+        """
+        Make prediction on minibatch
+        :param anchor: anchor img of size [B, C, B, W]
+        :param positive: positive img
+        :param negative: negative img
+        :return: pred_y of size [B,] and loss of size [B,]
+        """
         # print(f"Triplet model predict: anchor shape {anchor.shape}")
         anchor = self.get_embedding(anchor)
         positive = self.get_embedding(positive)
         negative = self.get_embedding(negative)
-        loss = self.triplet_loss(anchor, positive, negative)
+        # print(f"Triplet model predict: anchor shape {anchor.shape}")
+        loss = self.triplet_loss_batch(anchor, positive, negative)
         # print(f"Triplet model predict: loss shape {loss.shape}")
         pred_y = torch.where(loss - self.margin < 0, 1, 0)
         # print(f"Triplet model predict: pred_y shape {pred_y.shape}")
-        # pred_y = 1 if np.random.rand() < 0.5 else 0
         return pred_y, loss

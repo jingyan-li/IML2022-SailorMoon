@@ -13,7 +13,7 @@ data_cfg:
   root_path: "/cluster/scratch/jingyli/iml/data"
   image_resize: [240, 240]
   loader_cfg:
-    batch_size: 128
+    batch_size: 64
     num_workers: 4
     pin_memory: True
 

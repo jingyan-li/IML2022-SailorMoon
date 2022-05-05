@@ -53,10 +53,12 @@ if __name__ == "__main__":
     for step, batch in enumerate(tqdm(dataloader)):
         anchor_img, positive_img, negative_img = (_.to(device) for _ in batch)
         B, C, W, H = anchor_img.shape
+        # print(f"Batch size {B}")
         pred_y, loss = triplet_model.predict(anchor_img, positive_img, negative_img)
-        # print(f"Batch {step} - Loss {loss}")
         results.append(pred_y.to('cpu').numpy())
+        # print(f"Batch {step} - Loss {loss} - pred_y {results[-1]}")
 
-    results = np.asarray(results).reshape(-1).astype(np.int)
+    results = np.asarray(results).reshape(-1).tolist()
     # Save results
-    np.savetxt("predict.csv", results, delimiter="\n")
+    with open("predict.csv", "w") as file:
+        file.writelines("\n".join([str(int(_)) for _ in results]))
