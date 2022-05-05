@@ -108,7 +108,13 @@ class TripletModel(nn.Module):
         return loss
 
     def predict(self, anchor, positive, negative):
+        # print(f"Triplet model predict: anchor shape {anchor.shape}")
+        anchor = self.get_embedding(anchor)
+        positive = self.get_embedding(positive)
+        negative = self.get_embedding(negative)
         loss = self.triplet_loss(anchor, positive, negative)
-        pred_y = 1 if loss - self.margin < 0 else 0
+        # print(f"Triplet model predict: loss shape {loss.shape}")
+        pred_y = torch.where(loss - self.margin < 0, 1, 0)
+        # print(f"Triplet model predict: pred_y shape {pred_y.shape}")
         # pred_y = 1 if np.random.rand() < 0.5 else 0
         return pred_y, loss

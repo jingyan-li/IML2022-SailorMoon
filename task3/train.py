@@ -52,15 +52,21 @@ if __name__ == "__main__":
         # print(f"anchor {anchor_img.shape}, positive {positive_img.shape}, negative {negative_img.shape}")
         anchor_emb, positive_emb, negative_emb = model(anchor_img, positive_img, negative_img)
         loss = triplet_loss(anchor_emb, positive_emb, negative_emb)
+        # B, C, W, H = anchor_img.shape
+        # pred_y, pred_loss = model.predict(anchor_img, positive_img, negative_img)
+        # acc = torch.sum(pred_y) / B
+        # print(f"acc: {acc}, loss {loss}")
         return {"loss": loss}
 
 
-    @run.validate_step(data.dataloaders['test'], every=2, at=0)
-    def val_step(batch, model, epoch, batch_index):
+    @run.validate_step(data.dataloaders['test'], every=5, at=0)
+    def val_step(batch, model):
         anchor_img, positive_img, negative_img = batch
+        B, C, W, H = anchor_img.shape
         pred_y, loss = model.predict(anchor_img, positive_img, negative_img)
-        print(f"Validation: pred_y.shape {pred_y.shape}")
-        return {'loss': loss}
+        # print(f"Validation: pred_y.shape {pred_y.size()}")
+        acc = torch.sum(pred_y) / B
+        return {'loss': loss, 'accuracy': acc}, None
 
     # TODO: define optimizer
     @run.configure_optimizers

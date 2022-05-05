@@ -1,0 +1,13 @@
+name: inference
+
+# dataset and data loader control
+data_cfg:
+  root_path: "/cluster/scratch/jingyli/iml/data"
+  image_resize: [ 240, 240 ]
+  loader_cfg:
+    batch_size: 128
+    num_workers: 1
+    pin_memory: True
+# inference control
+inference_cfg:
+  resume_checkpoint: '/cluster/scratch/jingyli/iml/task3/train_logs/22-05-05_16-24-09_mellow-smilodon-22'

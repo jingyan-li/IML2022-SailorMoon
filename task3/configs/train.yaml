@@ -7,13 +7,13 @@ train_cfg:
   weight_decay: 0.001
   scheduler:
     milestones: [100, 200]
-  epochs: 5
+  epochs: 100
 
 data_cfg:
   root_path: "/cluster/scratch/jingyli/iml/data"
   image_resize: [240, 240]
   loader_cfg:
-    batch_size: 64
+    batch_size: 128
     num_workers: 4
     pin_memory: True
 
@@ -21,7 +21,7 @@ model_cfg:
   embedding_model:
     out_channels: 2
   triplet_model:
-    margin: 0.5
+    margin: 0.8
 
 log_cfg:
   use_wandb_logger: True
