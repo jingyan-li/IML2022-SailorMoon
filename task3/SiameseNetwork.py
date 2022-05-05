@@ -12,7 +12,8 @@ class EmbeddingNet(nn.Module):
     def __init__(self, img_size: tuple, out_channels: int):
         super(EmbeddingNet, self).__init__()
         # Input is [BatchSize, 3, 348, 512]
-        # 240
+        # Input is [BatchSize, 3, 240, 240] after image resize
+        # TODO: Replace CNN by pre-trained network & fine tuning
         # TODO: CNN structure
         self.convnet = nn.Sequential(nn.Conv2d(3, 8, 5, padding=2),
                                      nn.PReLU(), nn.BatchNorm2d(8),
