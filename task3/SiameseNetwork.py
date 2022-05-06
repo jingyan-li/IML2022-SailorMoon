@@ -101,7 +101,9 @@ class TripletModel(nn.Module):
 
     def get_embedding(self, x):
         # TODO: Embedding by pre-trained network
-        return self.embedding_model(x)
+        emb_weight = self.embedding_model.weight.clone()
+        embedding = nn.Embedding.from_pretrained(emb_weight)
+        return embedding(x)
 
     def loss(self, anchor, positive, negative):
         """
@@ -124,8 +126,8 @@ class TripletModel(nn.Module):
         """
         # print(f"Triplet model predict: anchor shape {anchor.shape}")
         anchor = self.get_embedding(anchor)
-        positive = self.get_embedding(positive)
-        negative = self.get_embedding(negative)
+        positive = self.get_embedding(anchor, positive)
+        negative = self.get_embedding(anchor, negative)
         # print(f"Triplet model predict: anchor shape {anchor.shape}")
         loss = self.triplet_loss_batch(anchor, positive, negative)
         # print(f"Triplet model predict: loss shape {loss.shape}")
