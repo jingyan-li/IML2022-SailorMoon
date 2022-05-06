@@ -126,8 +126,8 @@ class TripletModel(nn.Module):
         """
         # print(f"Triplet model predict: anchor shape {anchor.shape}")
         anchor = self.get_embedding(anchor)
-        positive = self.get_embedding(anchor, positive)
-        negative = self.get_embedding(anchor, negative)
+        positive = self.get_embedding(positive)
+        negative = self.get_embedding(negative)
         # print(f"Triplet model predict: anchor shape {anchor.shape}")
         loss = self.triplet_loss_batch(anchor, positive, negative)
         # print(f"Triplet model predict: loss shape {loss.shape}")
