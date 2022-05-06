@@ -10,4 +10,4 @@ data_cfg:
     pin_memory: True
 # inference control
 inference_cfg:
-  resume_checkpoint: '/cluster/scratch/jingyli/iml/task3/train_logs/22-05-05_16-24-09_mellow-smilodon-22'
+  resume_checkpoint: '/cluster/scratch/jingyli/iml/task3/train_logs/22-05-05_19-55-52_translucent-basilisk-30'

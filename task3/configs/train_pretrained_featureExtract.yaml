@@ -1,4 +1,4 @@
-name: baseline
+name: with_pretrained_featureExtractor
 train_cfg:
   random_seed: 2022
   deterministic: True
@@ -20,11 +20,12 @@ data_cfg:
 
 model_cfg:
   embedding_model:
+    pretrain_model: "resnet"
     out_channels: 5
-    pretrain_model: ""
-    feature_extract: False
+    feature_extract: True
   triplet_model:
     margin: 1
+
 
 log_cfg:
   use_wandb_logger: True

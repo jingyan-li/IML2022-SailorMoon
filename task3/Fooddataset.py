@@ -93,7 +93,7 @@ class _FoodDataset(Dataset):
         positive_img: torch.Tensor = self.preprocess_image(positive)
         negative_img: torch.Tensor = self.preprocess_image(negative)
 
-        return anchor_img, positive_img, negative_img
+        return anchor_img, positive_img, negative_img, anchor
 
     def preprocess_image(self, filename) -> torch.Tensor:
         img: Image = Image.open(self.img_dir / f'{filename}.jpg')
