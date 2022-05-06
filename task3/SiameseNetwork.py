@@ -101,7 +101,9 @@ class TripletModel(nn.Module):
 
     def get_embedding(self, x):
         # TODO: Embedding by pre-trained network
-        return self.embedding_model(x)
+        emb_weight = self.embedding_model.weight.clone()
+        embedding = nn.Embedding.from_pretrained(emb_weight)
+        return embedding(x)
 
     def loss(self, anchor, positive, negative):
         """
