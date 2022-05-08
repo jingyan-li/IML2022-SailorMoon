@@ -12,13 +12,14 @@ import yaml
 from tqdm import tqdm
 
 from Fooddataset import FoodData
-from SiameseNetwork import EmbeddingNet, EmbeddingNetL2, TripletModel
+from SiameseNetwork import EmbeddingNet, EmbeddingNetL2, TripletModel, EmbeddingNetPretrain
 
 
 def config():
     a = argparse.ArgumentParser()
     a.add_argument("--train_config", help="path to train config", default='configs/train.yaml')
     a.add_argument("--pred_config", help="path to inference config", default="configs/inference.yaml")
+    a.add_argument("--output", default="predict.csv", help="path and filename of output file")
     args = a.parse_args()
     return args
 
@@ -37,8 +38,18 @@ if __name__ == "__main__":
 
     # Initialize model
     img_size = train_config['data_cfg']['image_resize']
-    embedding_model = EmbeddingNet(img_size, **train_config['model_cfg']['embedding_model']).to(device)
-    triplet_model = TripletModel(embedding_model, **train_config['model_cfg']['triplet_model']).to(device)
+
+    USE_PRETRAIN = False if train_config['model_cfg']['embedding_model']['pretrain_model'] == "" else True
+    FEATURE_EXTRACT = train_config['model_cfg']['embedding_model']['feature_extract']
+
+    embedding_model = EmbeddingNet(img_size, train_config
+        ['model_cfg']['embedding_model']['out_channels']) if not USE_PRETRAIN else EmbeddingNetPretrain(
+        **train_config['model_cfg']['embedding_model'])
+    triplet_model = TripletModel(embedding_model, **train_config['model_cfg']['triplet_model'])
+
+    # To gpu
+    embedding_model = embedding_model.to(device)
+    triplet_model = triplet_model.to(device)
 
     checkpoint_path = os.path.join(pred_config['inference_cfg']['resume_checkpoint'], 'checkpoints/best')
     triplet_model.load_state_dict(torch.load(checkpoint_path)['model'])
@@ -65,6 +76,6 @@ if __name__ == "__main__":
     results = [item for sublist in results for item in sublist]
     # print(results)
     # Save results
-    with open("predict.csv", "w") as file:
+    with open(args.output, "w") as file:
         file.writelines("\n".join([str(int(_)) for _ in results]))
     print("Saved!")

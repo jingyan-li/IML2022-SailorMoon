@@ -20,7 +20,7 @@ data_cfg:
 
 model_cfg:
   embedding_model:
-    pretrain_model: "vgg"
+    pretrain_model: "resnet50"
     out_channels: 20
     feature_extract: True
   triplet_model:
