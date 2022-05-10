@@ -17,7 +17,7 @@ from SiameseNetwork import EmbeddingNet, EmbeddingNetL2, TripletModel, Embedding
 
 def config():
     a = argparse.ArgumentParser()
-    a.add_argument("--train_config", help="path to train config", default='configs/train.yaml')
+    a.add_argument("--train_config", help="train config name", default='config.yaml')
     a.add_argument("--pred_config", help="path to inference config", default="configs/inference.yaml")
     a.add_argument("--output", default="predict.csv", help="path and filename of output file")
     args = a.parse_args()
@@ -27,11 +27,13 @@ def config():
 if __name__ == "__main__":
     args = config()
 
-    with open(args.train_config) as fh:
-        train_config = yaml.safe_load(fh)
+    # with open(args.train_config) as fh:
+    #     train_config = yaml.safe_load(fh)
 
     with open(args.pred_config) as fh:
         pred_config = yaml.safe_load(fh)
+    with open(os.path.join(pred_config['inference_cfg']['resume_checkpoint'], args.train_config)) as fh:
+        train_config = yaml.safe_load(fh)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     torch.cuda.empty_cache()

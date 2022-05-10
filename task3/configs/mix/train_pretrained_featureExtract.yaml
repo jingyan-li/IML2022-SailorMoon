@@ -1,0 +1,31 @@
+name: with_pretrained_featureExtractor_mixmodels
+train_cfg:
+  random_seed: 2022
+  deterministic: True
+  resume_checkpoint: null
+  optimizer: Adam
+  lr: 0.0001
+  weight_decay: 0.001
+  scheduler:
+    milestones: [15,30,45]
+  epochs: 50
+
+data_cfg:
+  root_path: "/cluster/scratch/jingyli/iml/data"
+  image_resize: [299, 299]
+  loader_cfg:
+    batch_size: 32
+    num_workers: 4
+    pin_memory: True
+
+model_cfg:
+  embedding_model:
+    pretrain_model: ["vgg","inception"]
+    out_channels: 32
+    feature_extract: True
+  triplet_model:
+    margin: 1
+
+
+log_cfg:
+  use_wandb_logger: True

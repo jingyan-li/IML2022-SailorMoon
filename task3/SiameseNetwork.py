@@ -4,9 +4,22 @@ Siamese Neural Network
 
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision import transforms as tr
 import torch
-import numpy as np
 from torchvision import models
+
+
+def getEmbeddingModel(run: dict, device):
+    img_size = run['data_cfg.image_resize']
+    USE_PRETRAIN = False if run['model_cfg.embedding_model.pretrain_model'] == "" else True
+    FEATURE_EXTRACT = run['model_cfg.embedding_model.feature_extract']
+    net = EmbeddingNet(img_size, run['model_cfg.embedding_model.out_channels'])
+    if USE_PRETRAIN:
+        if isinstance(run['model_cfg.embedding_model.pretrain_model'], str):
+            net = EmbeddingNetPretrain(**run['model_cfg.embedding_model'])
+        else:
+            net = EmbeddingNetPretrainMix(**run['model_cfg.embedding_model'], device=device)
+    return net, USE_PRETRAIN, FEATURE_EXTRACT
 
 
 class EmbeddingNet(nn.Module):
@@ -54,10 +67,129 @@ class EmbeddingNetPretrain(nn.Module):
         self.pretrained_net, self.img_size = initialize_model(model_name=pretrain_model,
                                                               num_classes=out_channels,
                                                               feature_extract=feature_extract)
-
     def forward(self, x):
         output = self.pretrained_net(x)
         return output
+
+    def get_embedding(self, x):
+        return self.forward(x)
+
+
+class EmbeddingNetPretrainMix(nn.Module):
+    def __init__(self, out_channels: int, device, pretrain_model: list = ["resnet"], feature_extract: bool = True):
+        """
+        Use pretrained vision model as backbone
+        :param out_channels: Dimension of embedding to be extracted
+        :param device: Whether to put pretrained model to cuda
+        :param pretrain_model: name of pretrain model
+        :param feature_extract: True if only train the last layer of pretrain model, False to do fine-tuning for all layers
+        """
+        super(EmbeddingNetPretrainMix, self).__init__()
+        # Input is [BatchSize, 3, 240, 240] after image resize
+        # TODO: Pretrained networks
+        self.device = device
+        self.pretrained_nets, embed_dim = self._mix_pretrain_embedding(pretrain_model)
+
+        self.embedding = Embedding1D_v2(in_features=embed_dim, out_features=out_channels)
+
+    def forward(self, x):
+        """
+        Go through pretrained embedding and concat them as output
+        :param x:
+        :return:
+        """
+        mix_embed = []
+        for k, m in self.pretrained_nets.items():
+            # print(k)
+            # print(x.shape)
+            if k != "inception":
+                x_ = tr.Resize([224, 224])(x)
+                mix_embed.append(m(x_))
+                del x_
+            else:
+                incep_out, incep_aux = m(x)
+                incep_all = incep_out + 0.4*incep_aux
+                mix_embed.append(incep_all)
+        embed = torch.cat(mix_embed, 1)
+        del mix_embed
+        output = self.embedding(embed)
+        return output
+
+    def get_embedding(self, x):
+        return self.forward(x)
+
+    def _mix_pretrain_embedding(self, pretrain_models):
+        mix_models = {}
+        model_dim = 0
+        for k in pretrain_models:
+            if k == "resnet":
+                mix_models[k] = models.resnet152(pretrained=True, progress=True).to(self.device)
+                model_dim += mix_models[k].fc.out_features
+            elif k == "inception":
+                mix_models[k] = models.inception_v3(pretrained=True, progress=True).to(self.device)
+                model_dim += mix_models[k].fc.out_features
+            elif k == "vgg":
+                mix_models[k] = models.vgg19_bn(pretrained=True, progress=True).to(self.device)
+                model_dim += mix_models[k].classifier[6].out_features
+            for param in mix_models[k].parameters():
+                param.requires_grad = False
+        return mix_models, model_dim
+
+
+class Embedding1D_v2(nn.Module):
+    def __init__(self, in_features: int, out_features: int):
+        super(Embedding1D, self).__init__()
+
+        self.layer1 = nn.Sequential(
+            # nn.BatchNorm2d(in_features, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.Dropout2d(0.5),
+            nn.Linear(in_features, out_features*2),
+            nn.BatchNorm1d(out_features*2),
+            nn.PReLU()
+        )
+        self.layer2 = nn.Sequential(
+            nn.Dropout2d(0.5),
+            nn.Linear(out_features*2, out_features),
+            nn.BatchNorm1d(out_features),
+            # nn.PReLU()
+        )
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        # x = x.view(x.shape[0], -1)
+        # x = self.layer3(x)
+        return x
+
+    def get_embedding(self, x):
+        return self.forward(x)
+
+
+class Embedding1D(nn.Module):
+    def __init__(self, in_features: int):
+        super(Embedding1D, self).__init__()
+
+        self.layer1 = nn.Sequential(
+            # nn.BatchNorm2d(in_features, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
+            nn.Dropout2d(0.5),
+            nn.Linear(in_features, 128),
+            nn.BatchNorm1d(128),
+            nn.PReLU()
+        )
+        self.layer2 = nn.Sequential(
+            nn.Dropout2d(0.3),
+            nn.Linear(128, 64),
+            nn.BatchNorm1d(64),
+            # nn.PReLU()
+        )
+
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        # x = x.view(x.shape[0], -1)
+        # x = self.layer3(x)
+        return x
 
     def get_embedding(self, x):
         return self.forward(x)
@@ -153,6 +285,50 @@ class TripletModel(nn.Module):
         # print(f"Triplet model predict: loss shape {loss.shape}")
         pred_y = torch.where(loss - self.margin < 0, 1, 0)
         # print(f"Triplet model predict: pred_y shape {pred_y.shape}")
+        return pred_y, loss
+
+
+class TripletModel_v2(nn.Module):
+    def __init__(self, embedding_model: nn.Module, margin: float, device):
+        super(TripletModel_v2, self).__init__()
+        self.device = device
+        self.embedding_model = embedding_model
+        self.margin = margin
+        # self.cos_similarity = nn.CosineSimilarity(dim=0, eps=1e-8)
+        self.triplet_loss = nn.TripletMarginLoss(margin=self.margin,
+                                                 p=2).to(
+            device)
+
+    def forward(self, anchor, positive, negative):
+        anchor_emb = self.embedding_model(anchor)
+        positive_emb = self.embedding_model(positive)
+        negative_emb = self.embedding_model(negative)
+
+        loss = self.loss(anchor_emb, positive_emb, negative_emb)
+        return loss
+
+    def get_embedding(self, x):
+        return self.embedding_model(x)
+
+    def loss(self, anchor_emb, positive_emb, negative_emb):
+        loss = self.triplet_loss(anchor_emb, positive_emb, negative_emb)
+        return loss
+
+    def _predict(self, anchor_emb, positive_emb, negative_emb):
+        distance_positive = torch.norm(anchor_emb - positive_emb, p=2, dim=1)
+        distance_negative = torch.norm(anchor_emb - negative_emb, p=2, dim=1)
+        dist = distance_positive - distance_negative
+        dist = dist.double()
+        pred_y = torch.where(dist >= 0, torch.zeros(dist.size()).to(self.device),
+                             torch.ones(dist.size()).to(self.device))
+        return pred_y
+
+    def predict_with_loss(self, anchor, positive, negative):
+        anchor_emb = self.embedding_model(anchor)
+        positive_emb = self.embedding_model(positive)
+        negative_emb = self.embedding_model(negative)
+        loss = self.loss(anchor_emb, positive_emb, negative_emb)
+        pred_y = self._predict(anchor_emb, positive_emb, negative_emb)
         return pred_y, loss
 
 

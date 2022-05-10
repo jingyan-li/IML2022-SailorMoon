@@ -12,4 +12,11 @@
 
 ## Inference
 
-`bsub -W 4:00 -J "iml-infer-baseline" -N -R "rusage[mem=16384,ngpus_excl_p=1]" -o ../logs/infer-baseline.out -n 5 "python -m inference"`
+`bsub -W 4:00 -J "iml-infer-baseline" -N -R "rusage[mem=16384,ngpus_excl_p=1]" -o ../logs/infer-baseline.out -n 5 "python -m inference --pred_config path/to/inference_config.yaml"`
+
+
+## Version 2 
+
+Extract features first and store them locally, then use `TripletData` to read features directly for training
+
+`bash run.sh`

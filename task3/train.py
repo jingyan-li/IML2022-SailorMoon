@@ -9,7 +9,7 @@ from blowtorch2.blowtorch import Run
 from blowtorch2.blowtorch.loggers import WandbLogger
 
 from Fooddataset import FoodData
-from SiameseNetwork import EmbeddingNet, TripletModel, EmbeddingNetPretrain
+from SiameseNetwork import getEmbeddingModel, TripletModel
 
 
 def config():
@@ -34,11 +34,7 @@ if __name__ == "__main__":
     data = FoodData(**run['data_cfg'])
 
     # Initialize model
-    img_size = run['data_cfg.image_resize']
-    USE_PRETRAIN = False if run['model_cfg.embedding_model.pretrain_model'] == "" else True
-    FEATURE_EXTRACT = run['model_cfg.embedding_model.feature_extract']
-
-    embedding_model = EmbeddingNet(img_size, run['model_cfg.embedding_model.out_channels']) if not USE_PRETRAIN else EmbeddingNetPretrain(**run['model_cfg.embedding_model'])
+    embedding_model, USE_PRETRAIN, FEATURE_EXTRACT = getEmbeddingModel(run, device)
     triplet_model = TripletModel(embedding_model, **run['model_cfg.triplet_model'])
 
     @run.train_step(data.dataloaders['train'])
@@ -66,6 +62,7 @@ if __name__ == "__main__":
     # TODO: define optimizer
     @run.configure_optimizers
     def configure_optimizers(model):
+        print(model)
         params_to_update = model.parameters()
         print("Params to learn:")
         if USE_PRETRAIN and FEATURE_EXTRACT:
@@ -75,6 +72,8 @@ if __name__ == "__main__":
                 if param.requires_grad == True:
                     params_to_update.append(param)
                     print("\t", name)
+                else:
+                    print(f"Freezing {name}")
         else:
             if USE_PRETRAIN:
                 print("Use pretrained model and fine tuning all layers!")
