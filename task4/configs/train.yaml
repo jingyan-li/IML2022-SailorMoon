@@ -1,0 +1,5 @@
+name: train
+pretrain_checkpoint: '/cluster/scratch/jingyli/iml/task4/train_logs/22-05-30_00-39-27_piquant-pigeon-1'
+train_model_cfg:
+  model_type: "RandomForest"
+output_root: "/cluster/scratch/jingyli/iml/task4/out"

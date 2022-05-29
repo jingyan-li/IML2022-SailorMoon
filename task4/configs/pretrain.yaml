@@ -1,0 +1,28 @@
+name: pretrain
+train_cfg:
+  random_seed: 2022
+  deterministic: True
+  resume_checkpoint: null
+  optimizer: AdamW
+  lr: 0.0001
+  weight_decay: 0.001
+  scheduler:
+    milestones: [10, 20, 30, 40]
+  epochs: 50
+
+data_cfg:
+  root_path: "/cluster/scratch/jingyli/iml/task4_data"
+  loader_cfg:
+    batch_size: 128
+    num_workers: 4
+    pin_memory: True
+
+pretrain_model_cfg:
+  input_features: 1000
+  out_channels: 128
+  regress_head_input_channels: 16
+  dropout: 0.1
+
+
+log_cfg:
+  use_wandb_logger: True
