@@ -2,6 +2,7 @@
 Scripts for training
 """
 import pandas as pd
+import sklearn.linear_model
 from sklearn.ensemble import RandomForestRegressor
 import argparse
 import torch
@@ -9,6 +10,10 @@ import yaml
 from pathlib import Path
 import numpy as np
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV
+from sklearn import svm
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, Matern, RationalQuadratic
 from tqdm import tqdm
 import os
 
@@ -39,6 +44,7 @@ if __name__ == "__main__":
 
     # Storage of embeddings
     embed_path = out_root / "embed.npz"
+    print(embed_path)
     if os.path.isfile(embed_path):
         # load existing embedding
         npzfile = np.load(embed_path)
@@ -101,14 +107,33 @@ if __name__ == "__main__":
     #################### Training ##########################
     # Fit the model
     ## TODO: Add Cross Validation /Hyperparameter tuning/ Try other models
-    train_model = RandomForestRegressor(n_estimators=100, random_state=config['train_cfg']['random_seed'])
+
+    #### SVC ####
+    cv_param = {'kernel':('linear', 'rbf','poly'), 'C':[1.14, 1.13,1.135], 'epsilon':[0.016, 0.018,0.017]}
+    model = svm.SVR()
+
+    #### RandomForest ###
+    #train_model = RandomForestRegressor(n_estimators=100, random_state=config['train_cfg']['random_seed'])
     # Multiply by -1 since sklearn calculates *negative* RMSE
-    scores = -1 * cross_val_score(train_model, pred_embedding, pred_y_target.ravel(),
-                                  cv=5,
-                                  scoring='neg_root_mean_squared_error')
+    #scores = -1 * cross_val_score(train_model, pred_embedding, pred_y_target.ravel(),
+    #                              cv=5,
+    #                              scoring='neg_root_mean_squared_error')
     # Average over cv results
-    scores_avg = np.mean(scores)
-    print(f"TRAIN DATA - CV MSE {scores_avg}; scores {scores}")
+    #scores_avg = np.mean(scores)
+    #print(f"TRAIN DATA - CV MSE {scores_avg}; scores {scores}")
+
+    ### GP  ###
+    #cv_param = {'kernel':[RBF(),Matern(),RationalQuadratic(alpha=2.5),RationalQuadratic(alpha=2.2),RationalQuadratic(alpha=2.8)]}
+    #model = GaussianProcessRegressor()
+
+
+    clf = GridSearchCV(model,cv_param,error_score='raise',scoring='neg_root_mean_squared_error')
+    clf.fit(pred_embedding,pred_y_target.ravel())
+    train_model = clf.best_estimator_
+    scores = clf.best_score_
+
+    print(f"train score {scores}")
+    print(clf.best_params_)
 
     #################### Inference on Test data ##########################
     # Predict by model
@@ -117,5 +142,5 @@ if __name__ == "__main__":
     # Combine target and index
     test_result_df = pd.DataFrame({"Id": test_y_idx, "y": test_y_target}).sort_values(by="Id")
     # Save to csv
-    test_result_df.to_csv(out_root/"submit.csv", index=False)
+    test_result_df.to_csv("out/submit.csv", index=False)
     print("Test prediction saved!")
