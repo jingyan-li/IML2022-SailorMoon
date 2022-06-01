@@ -1,5 +1,5 @@
 name: pretrain
-model_type: ""
+model_type: "simple"
 train_model_type: "svm"
 train_cfg:
   random_seed: 2022
@@ -10,7 +10,7 @@ train_cfg:
   weight_decay: 0.001
   scheduler:
     milestones: [10, 20, 30, 40]
-  epochs: 50
+  epochs: 26
 
 data_cfg:
   root_path: "/cluster/scratch/jingyli/iml/task4_data"
@@ -21,9 +21,9 @@ data_cfg:
 
 pretrain_model_cfg:
   input_features: 1000
-  out_channels: 80
+  out_channels: 100
   regress_head_input_channels: 16
-  dropout: 0.8
+  dropout: 0.3
 
 
 log_cfg:

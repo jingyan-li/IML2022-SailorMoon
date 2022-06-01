@@ -12,13 +12,15 @@ from sklearn.model_selection import cross_val_score
 from tqdm import tqdm
 import os
 
-from src.PretrainDataset import MolecularData
-from src.PretrainModel import PretrainEmbeddingNet
+from sklearn.model_selection import GridSearchCV
+from sklearn import svm
 
+from src.PretrainDataset import MolecularData
+from src import get_pretrainmodel
 
 def config():
     a = argparse.ArgumentParser()
-    a.add_argument("--pretrain_config", help="path to pretrain config", default='configs/pretrain.yaml')
+    a.add_argument("--pretrain_config", help="path to pretrain config", default='configs/pretrain_simple.yaml')
     a.add_argument("--train_config", help="path to train config", default='configs/train.yaml')
     args = a.parse_args()
     return args
@@ -54,7 +56,7 @@ if __name__ == "__main__":
         torch.cuda.empty_cache()
 
         # Initialize pretrain model
-        pretrain_model = PretrainEmbeddingNet(**config['pretrain_model_cfg'])
+        pretrain_model = get_pretrainmodel(config)
 
         # To gpu
         pretrain_model = pretrain_model.to(device)
@@ -101,14 +103,33 @@ if __name__ == "__main__":
     #################### Training ##########################
     # Fit the model
     ## TODO: Add Cross Validation /Hyperparameter tuning/ Try other models
-    train_model = RandomForestRegressor(n_estimators=100, random_state=config['train_cfg']['random_seed'])
+
+    #### SVC ####
+    cv_param = {'kernel':('linear', 'rbf','poly'), 'C':[1.14, 1.13,1.135], 'epsilon':[0.016, 0.018,0.017]}
+    model = svm.SVR()
+
+    #### RandomForest ###
+    #train_model = RandomForestRegressor(n_estimators=100, random_state=config['train_cfg']['random_seed'])
     # Multiply by -1 since sklearn calculates *negative* RMSE
-    scores = -1 * cross_val_score(train_model, pred_embedding, pred_y_target.ravel(),
-                                  cv=5,
-                                  scoring='neg_root_mean_squared_error')
+    #scores = -1 * cross_val_score(train_model, pred_embedding, pred_y_target.ravel(),
+    #                              cv=5,
+    #                              scoring='neg_root_mean_squared_error')
     # Average over cv results
-    scores_avg = np.mean(scores)
-    print(f"TRAIN DATA - CV MSE {scores_avg}; scores {scores}")
+    #scores_avg = np.mean(scores)
+    #print(f"TRAIN DATA - CV MSE {scores_avg}; scores {scores}")
+
+    ### GP  ###
+    #cv_param = {'kernel':[RBF(),Matern(),RationalQuadratic(alpha=2.5),RationalQuadratic(alpha=2.2),RationalQuadratic(alpha=2.8)]}
+    #model = GaussianProcessRegressor()
+
+
+    clf = GridSearchCV(model,cv_param,error_score='raise',scoring='neg_root_mean_squared_error')
+    clf.fit(pred_embedding,pred_y_target.ravel())
+    train_model = clf.best_estimator_
+    scores = - clf.best_score_
+
+    print(f"train score {scores}")
+    print(clf.best_params_)
 
     #################### Inference on Test data ##########################
     # Predict by model

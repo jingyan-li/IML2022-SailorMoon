@@ -27,6 +27,7 @@ class MolecularData():
         self.dataloaders = {'pretrain': None, 'test': None, 'train': None}
         self.data_root = Path(root_path)
         self.arr_dict = {'pretrain': None, 'test': None, 'train': None}
+        self.data_all = {'pretrain': None, 'test': None, 'train': None}
 
         # load scan scenes as train/test list
         for k in load_sets:
@@ -56,6 +57,15 @@ class MolecularData():
             )
             self.dataloaders[k] = DataLoader(self.datasets[k], shuffle=shuffles[k], sampler=samplers[k], **loader_cfg)
             print('Build {} dataset and loader with length {}'.format(k, len(self.datasets[k])))
+
+        # Read train data as whole
+        if "train" in load_sets:
+            self.data_all['train'] = {
+                "feature": torch.tensor(self.arr_dict['train']["feature"]).float(),
+                "label": self.arr_dict['train']["label"],
+                "index": self.arr_dict['train']["id"]
+            }
+
 
     def getFeatures(self, path: Path, split: str = "train"):
         df_feat = pd.read_csv(path / f"{split}_features.csv").sort_values(by="Id").set_index("Id", drop=True)
