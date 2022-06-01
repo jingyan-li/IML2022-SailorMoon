@@ -45,16 +45,16 @@ class PretrainEmbeddingNet(nn.Module):
         self.encoder = nn.Sequential(
             nn.Linear(input_features, 800),
             nn.BatchNorm1d(800),
-            nn.LeakyReLU(0.1),
+            nn.LeakyReLU(),
             nn.Linear(800, 600),
             nn.Dropout(dropout),
             nn.Tanh(),
             nn.Linear(600, 250),
             nn.LeakyReLU(),
             nn.Linear(250, 200),
-            nn.Sigmoid(),
+            nn.Tanh(),
             nn.Linear(200,100),
-            nn.LeakyReLU(0.1),
+            nn.LeakyReLU(),
             nn.Dropout(dropout),
             nn.Linear(100,out_channels)
         )
